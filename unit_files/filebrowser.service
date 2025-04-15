@@ -1,0 +1,15 @@
+[Unit]
+Description=Keksbox FileBrowser
+Documentation=https://github.com/whati001/keksbox
+After=network.target
+
+[Service]
+Type=simple
+User=keksbox
+Group=keksbox
+WorkingDirectory=/home/keksbox/data/filebrowser
+ExecStart=/usr/local/bin/filebrowser -r /home/keksbox/data/custom/
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

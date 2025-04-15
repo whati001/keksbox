@@ -1,0 +1,15 @@
+[Unit]
+Description=Keksbox Application
+Documentation=https://github.com/whati001/keksbox
+After=network.target
+
+[Service]
+Type=simple
+User=keksbox
+Group=keksbox
+WorkingDirectory=/home/keksbox/
+ExecStart=/home/keksbox/keksbox/keksbox.bash
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

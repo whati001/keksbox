@@ -10,12 +10,13 @@
 SVC_USER="keksbox"
 SVC_GROUP="keksbox"
 SVC_DIR="/home/keksbox"
-TMP_DIR="$SVC_DIR/tmp"
+TMP_DIR="/tmp"
 
 # Keks data directory
 KEKS_DATA_DIR="/opt/keksbox"
 KEKS_DATA_DIR_STD="$KEKS_DATA_DIR/standard"
 KEKS_DATA_DIR_CUSTOM="$KEKS_DATA_DIR/custom"
+KEKS_DATA_DIR_SYSTEM="$KEKS_DATA_DIR/system"
 KEKS_LINK_DIR_ACTIVE="$KEKS_DATA_DIR_CUSTOM/active"
 
 # Keksbox NFC Tag specs
@@ -25,6 +26,11 @@ KEKS_UID_REG="UID.*:( +[0-9A-Za-z]{2}){7}"
 KEKS_ATQA_REG="ATQA.*00 +44"
 KEKS_SAK_REG="SAK.*00"
 KEKS_VALUE_REG="en[0-9]{12}"
+
+# Audio configuration
+PLAYER="play" # from sox package
+AUDIO_CONNECT="$KEKS_DATA_DIR_SYSTEM/connect.mp3"
+AUDIO_DISCONNECT="$KEKS_DATA_DIR_SYSTEM/disconnect.wav"
 
 # Global variables
 ACTIVE_TAG_INFO=""
@@ -92,6 +98,7 @@ wait_for_new_device() {
         echo "Waiting for new keks nfc tag..."
         nfc-poll
         echo "New nfc tag detected!"
+	tmux new -d -s effect "$PLAYER $AUDIO_CONNECT"
         is_keks_tag
         if [ $? -eq 0 ]; then
             echo "New tag is a keks tag!"
@@ -99,6 +106,7 @@ wait_for_new_device() {
             break
         else
             echo "Tag is not a keks tag!"
+	    tmux new -d -s effect "$PLAYER $AUDIO_DISCONNECT"
         fi
     done
 
@@ -143,7 +151,7 @@ while true; do
 
     # Play the song
     echo "Playing song from dir $KEKS_SONG_DIR"
-    tmux new -d -s player "mplayer $KEKS_SONG_DIR/*"
+    tmux new -d -s player "$PLAYER $KEKS_SONG_DIR/*"
 
     # Create symlink to current song
     unlink "$KEKS_LINK_DIR_ACTIVE" 2> /dev/null
@@ -155,13 +163,16 @@ while true; do
         same_keks_connected
         if [ $? -eq 0 ]; then
             echo "Same keks tag connected. Do nothing."
-            sleep 5
+            sleep 2
             continue
         fi
 
         # NFC tag is not present anymore
         echo "NFC tag is not present anymore. Stop playing song."
 	stop_song
+	sleep 1
+	tmux new -d -s effect "$PLAYER $AUDIO_DISCONNECT"
+
         break
     done
 done
