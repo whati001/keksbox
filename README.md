@@ -134,11 +134,11 @@ keksbox@rehkakeks:~ $ cd ~ && mkdir data && mkdir data/{custom,filebrowser,tmp}
 
 # create basic filebrowser configuration file
 keksbox@rehkakeks:~ $ cat > data/filebrowser/.filebrowser.yaml <<EOF
-># set listen address
->address: "0.0.0.0"
-># enable no authentication feature
->noauth: true
->EOF
+# set listen address
+address: "0.0.0.0"
+# enable no authentication feature
+noauth: true
+EOF
 
 # create system data direcotry with subfolders
 keksbox@rehkakeks:~ $ cd /opt && sudo mkdir keksbox && sudo mkdir keksbox/{standard,system} && sudo ln -s /home/keksbox/data/custom /opt/keksbox/ && sudo chown -R keksbox:keksbox /opt/keksbox
