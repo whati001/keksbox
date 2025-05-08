@@ -1,0 +1,17 @@
+[Unit]
+Description=Keksbox Application
+Documentation=https://github.com/whati001/keksbox
+After=sound.target
+
+[Service]
+Type=simple
+User=keksbox
+Group=keksbox
+WorkingDirectory=/home/keksbox/
+ExecStart=/home/keksbox/keksbox.bash
+Restart=on-failure
+Environment="AUDIODRIVER=alsa"
+Environment="AUDIODEV=hw:0,0"
+
+[Install]
+WantedBy=multi-user.target
