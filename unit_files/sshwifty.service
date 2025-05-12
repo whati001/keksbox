@@ -1,0 +1,15 @@
+[Unit]
+Description=Keksbox SSHClient
+Documentation=https://github.com/nirui/sshwifty
+After=network.target
+
+[Service]
+Type=simple
+User=keksbox
+Group=keksbox
+WorkingDirectory=/opt/sshwifty/
+ExecStart=/opt/sshwifty/sshwifty_linux_arm
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
