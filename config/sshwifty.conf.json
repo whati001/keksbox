@@ -30,5 +30,5 @@
             }
         }
     ],
-    "OnlyAllowPresetRemotes": true
+    "OnlyAllowPresetRemotes": false
 }

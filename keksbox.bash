@@ -154,6 +154,7 @@ while true; do
 
     # Determine song directory
     if [[ -d "$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR" ]]; then
+        echo "Custom song directory found: $KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
         KEKS_SONG_DIR="$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
     else
         KEKS_SONG_DIR="$KEKS_DATA_DIR_STD/$KEKS_DIR"
@@ -168,8 +169,10 @@ while true; do
     echo "Playing song from directory $KEKS_SONG_DIR"
     play_audio "$KEKS_SONG_DIR/*"
 
-    # Create symlink for active song
-    ln -sfn "$KEKS_SONG_DIR" "$KEKS_LINK_DIR_ACTIVE"
+    # Create custom directory and symlink for active song
+    local KEKS_DATA_DIR_CUSTOM_ACTIVE="$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
+    mkdir -p "$KEKS_DATA_DIR_CUSTOM_ACTIVE"
+    ln -sfn "$KEKS_DATA_DIR_CUSTOM_ACTIVE" "$KEKS_LINK_DIR_ACTIVE"
     echo "Created link for user uploads: $KEKS_LINK_DIR_ACTIVE"
 
     # Monitor for tag removal

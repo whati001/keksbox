@@ -12,8 +12,6 @@ keksbox@rehkakeks:~ $ sudo apt install pipewire pipewire-pulse
 # https://github.com/bluetuith-org/bluetuith/releases
 keksbox@rehkakeks:~ $ cd ~ && mkdir ./bin && cd bin && wget -qO- https://github.com/bluetuith-org/bluetuith/releases/download/v0.2.3/bluetuith_0.2.3_Linux_arm64.tar.gz | tar -xzv
 # add ~/.bin to PATH
-```bash
-# add ~/.bin to PATH
 keksbox@rehkakeks:~ $ echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
 keksbox@rehkakeks:~ $ source ~/.bashrc
 ```
@@ -29,13 +27,13 @@ keksbox@rehkakeks:~ $ cd /opt && sudo mkdir -p sshwifty && cd sshwifty && wget -
 SSHwifty requires a TLS connection to work correctly. Because the webpage is not exposed to the internet, we will create a self-signed certificate.
 
 ```bash
-keksbox@rehkakeks:~ $ cd /opt/sshwifty/ && sudo openssl req -newkey rsa:4096  -x509  -sha512  -days 365 -nodes -out certificate.pem -keyout privatekey.pem
+keksbox@rehkakeks:~ $ cd /opt/sshwifty/ && sudo openssl req -newkey rsa:4096  -x509  -sha512  -days 365 -nodes -out certificate.pem -keyout privatekey.pem && sudo chmod 644 privatekey.pem
 
 # enable sshwifty and configure to use the generated certificate
-keksbox@rehkakeks:~ $ sudo cp ~/keksbox/config/sshwifty.conf.template.json ./sshwifty.conf.json
+keksbox@rehkakeks:~ $ sudo cp ~/keksbox/config/sshwifty.conf.json ./sshwifty.conf.json
 
 # copy unit file and enable it
-keksbox@rehkakeks:~ $ sudo cp keksbox/unit_files/sshwifty.service /etc/systemd/system/
+keksbox@rehkakeks:~ $ sudo cp ~/keksbox/unit_files/sshwifty.service /etc/systemd/system/
 keksbox@rehkakeks:~ $ sudo chown root:root /etc/systemd/system/sshwifty.service
 keksbox@rehkakeks:~ $ sudo systemctl enable sshwifty.service
 keksbox@rehkakeks:~ $ sudo systemctl daemon-reload
@@ -96,7 +94,7 @@ The default `dhcpcd` service conflicts with NetworkManager. Stop and disable it:
 ```bash
 keksbox@rehkakeks:~ $ sudo systemctl stop dhcpcd
 keksbox@rehkakeks:~ $ sudo systemctl disable dhcpcd
-```
+```l
 
 Enable and start the NetworkManager service:
 ```bash
