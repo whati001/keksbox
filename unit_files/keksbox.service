@@ -1,0 +1,23 @@
+[Unit]
+Description=Keksbox Application
+Documentation=https://github.com/whati001/keksbox
+After=sound.target
+
+[Service]
+Type=simple
+User=keksbox
+Group=keksbox
+WorkingDirectory=/home/keksbox/
+ExecStart=/home/keksbox/keksbox.bash
+Restart=on-failure
+
+# depending on the selected setup, please commend in/out the proper section
+# if used without Advanced setup (pipewire)
+Environment="AUDIODRIVER=alsa"
+Environment="AUDIODEV=hw:0,0"
+# if used with Advanced setup (pipewire)
+#Environment="XDG_RUNTIME_DIR=/run/user/1000"
+
+
+[Install]
+WantedBy=multi-user.target

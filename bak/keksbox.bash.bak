@@ -1,0 +1,182 @@
+#!/bin/bash
+#
+# @author: whati001 (Andreas Karner)
+# @home: whati001.rehka.dev
+#
+# @description:
+#  Simple low code keksbox application code
+
+# Service user definition
+SVC_USER="keksbox"
+SVC_GROUP="keksbox"
+SVC_DIR="/home/keksbox"
+TMP_DIR="/tmp"
+
+# Keks data directory
+KEKS_DATA_DIR="/opt/keksbox"
+KEKS_DATA_DIR_STD="$KEKS_DATA_DIR/standard"
+KEKS_DATA_DIR_CUSTOM="$KEKS_DATA_DIR/custom"
+KEKS_DATA_DIR_SYSTEM="$KEKS_DATA_DIR/system"
+KEKS_LINK_DIR_ACTIVE="$KEKS_DATA_DIR_CUSTOM/active"
+
+# Keksbox NFC Tag specs
+KEKS_KEY="FFFFFFFF" # TODO: replace with real key (this is the default MIFARE key)
+KEKS_DUMP_FILE="$TMP_DIR/dump.mfd"
+KEKS_UID_REG="UID.*:( +[0-9A-Za-z]{2}){7}"
+KEKS_ATQA_REG="ATQA.*00 +44"
+KEKS_SAK_REG="SAK.*00"
+KEKS_VALUE_REG="en[0-9]{12}"
+
+# Audio configuration
+PLAYER="play" # from sox package
+AUDIO_CONNECT="$KEKS_DATA_DIR_SYSTEM/connect.mp3"
+AUDIO_DISCONNECT="$KEKS_DATA_DIR_SYSTEM/disconnect.mp3"
+
+# Global variables
+ACTIVE_TAG_INFO=""
+ACTIVE_KEKS_TAG=""
+
+# Register trap function for SIGINT and SIGTERM
+# This function will be called when the script receives a SIGINT or SIGTERM signal
+trop() {
+    echo "Exiting keksbox service..."
+    stop_song
+    exit 0
+}
+trap trop SIGINT
+trap trop SIGTERM
+
+stop_song() {
+    tmux kill-server
+    unlink "$KEKS_LINK_DIR_ACTIVE"
+}
+
+same_keks_connected() {
+    local KEKS_INFO=$(nfc-list -t 1)
+    if [ "$KEKS_INFO" == "$ACTIVE_TAG_INFO" ]; then
+        return 0
+    fi
+    return 1
+}
+
+is_keks_tag() {
+    local KEKS_INFO=$(nfc-list -t 1)
+    local ATQA_COUNT=$(echo "$KEKS_INFO" | grep -E "$KEKS_ATQA_REG" | wc -l)
+    local SAK_COUNT=$(echo "$KEKS_INFO" | grep -E "$KEKS_SAK_REG" | wc -l)
+
+    if [ "$ATQA_COUNT" -eq 0 ] || [ "$SAK_COUNT" -eq 0 ]; then
+        echo "No valid keks tag found!"
+        return 1
+    fi
+
+    # Try to read out the tag and find magic string
+    rm $KEKS_DUMP_FILE
+    nfc-mfultralight r "$KEKS_DUMP_FILE" --pw FFFFFFFF
+    # Check if the tag is a keks tag by searching for the magic string
+    local KEY_STRING=$(strings "$KEKS_DUMP_FILE" | grep -E "$KEKS_VALUE_REG")
+    if [ $(echo "$KEY_STRING" | wc -l) -eq 0 ]; then
+        echo "No valid keks tag found!"
+        return 1
+    fi
+
+    # Found a valid keks tag
+    ACTIVE_TAG_INFO=$KEKS_INFO
+    ACTIVE_KEKS_TAG=$KEY_STRING
+    return 0
+}
+
+# Start polling of new keks nfc tag
+wait_for_new_device() {
+    # Reset the active keks tag
+    ACTIVE_TAG_INFO=""
+    ACTIVE_KEKS_TAG=""
+
+    echo "Wait for new keks tag to be connected..."
+    # Start polling for new devices
+    while true; do
+        # Start polling for new devices
+        echo "Waiting for new keks nfc tag..."
+        local POLL_RESULT=$(nfc-poll)
+        if grep -q "No target found." <<<"$POLL_RESULT"; then
+            echo "No keks nfc tag found, retry polling"
+            continue
+        fi
+        echo "New nfc tag detected!"
+        tmux new -d -s effect "$PLAYER $AUDIO_CONNECT"
+        is_keks_tag
+        sleep 3
+        if [ $? -eq 0 ]; then
+            echo "New tag is a keks tag!"
+            echo "Tag name: $ACTIVE_KEKS_TAG"
+            break
+        else
+            echo "Tag is not a keks tag!"
+            tmux new -d -s effect "$PLAYER $AUDIO_DISCONNECT"
+        fi
+    done
+
+    return 0
+}
+
+# Check if the script is run as service user (keksbox)
+if [[ "$(id -u)" -ne "$(id -u $SVC_USER)" ]]; then
+    echo "This script should be run as user 'keksbox'. Please switch to the 'keksbox' user."
+    exit 1
+fi
+
+# Check if the script is run in the correct directory
+if [ "$(pwd)" != "$SVC_DIR" ]; then
+    echo "This script should be run in the directory '$SVC_DIR'. Please change to that directory."
+    exit 1
+fi
+
+# Start the keksbox main loop
+echo "Starting keksbox application"
+while true; do
+    # Wait for a new keks tag
+    wait_for_new_device
+    if [ $? -ne 0 ]; then
+        echo "Failed to wait for new keks tag. Retry to wait for new keks tag..."
+        sleep 5
+        continue
+    fi
+
+    # Extract the KEKS_DIR from the tag name
+    KEKS_DIR=${ACTIVE_KEKS_TAG:2:4}
+    echo "Start to play kekssong from dir $KEKS_DIR"
+
+    # Check if custom song dir exists
+    if [ -d "$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR" ]; then
+        echo "Custom song dir found: $KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
+        KEKS_SONG_DIR="$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
+    else
+        echo "No custom song dir found. Use standard song dir: $KEKS_DATA_DIR_STD/$KEKS_DIR"
+        KEKS_SONG_DIR="$KEKS_DATA_DIR_STD/$KEKS_DIR"
+    fi
+
+    # Play the song
+    echo "Playing song from dir $KEKS_SONG_DIR"
+    tmux new -d -s player "$PLAYER $KEKS_SONG_DIR/*"
+
+    # Create symlink to current song
+    unlink "$KEKS_LINK_DIR_ACTIVE" 2>/dev/null
+    ln -s "$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR" "$KEKS_LINK_DIR_ACTIVE"
+    echo "Created link for user to upload new songs"
+
+    while true; do
+        # Check if the tag is still present
+        same_keks_connected
+        if [ $? -eq 0 ]; then
+            echo "Same keks tag connected. Do nothing."
+            sleep 1
+            continue
+        fi
+
+        # NFC tag is not present anymore
+        echo "NFC tag is not present anymore. Stop playing song."
+        stop_song
+        echo "Play disconnect sound"
+        tmux new -d -s effect "$PLAYER $AUDIO_DISCONNECT"
+        break
+    done
+done
