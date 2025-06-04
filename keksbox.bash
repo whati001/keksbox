@@ -153,7 +153,7 @@ while true; do
     echo "Playing kekssong from keks id: $KEKS_DIR"
 
     # Determine song directory
-    if [[ -d "$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR" ]]; then
+    if [[ -d "$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR" ]] && [[ -n $(ls "$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR") ]]; then
         echo "Custom song directory found: $KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
         KEKS_SONG_DIR="$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
     else
@@ -170,7 +170,7 @@ while true; do
     play_audio "$KEKS_SONG_DIR/*"
 
     # Create custom directory and symlink for active song
-    local KEKS_DATA_DIR_CUSTOM_ACTIVE="$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
+    KEKS_DATA_DIR_CUSTOM_ACTIVE="$KEKS_DATA_DIR_CUSTOM/$KEKS_DIR"
     mkdir -p "$KEKS_DATA_DIR_CUSTOM_ACTIVE"
     ln -sfn "$KEKS_DATA_DIR_CUSTOM_ACTIVE" "$KEKS_LINK_DIR_ACTIVE"
     echo "Created link for user uploads: $KEKS_LINK_DIR_ACTIVE"
